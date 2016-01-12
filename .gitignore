@@ -1,0 +1,4 @@
+# .gitignore
+[Pp]latforms/
+[Pp]lugins/
+.DS_Store
