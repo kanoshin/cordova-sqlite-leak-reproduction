@@ -52,32 +52,27 @@
         function onDeviceReady() {
             var dbSettings = { name: "main" };
                                          
-            dbSettings.location = 1;
+            dbSettings.location = 2;
                                          
             window.sqlitePlugin.openDatabase(dbSettings, function(db) {
-                db.close(function() {
-                    db = window.sqlitePlugin.openDatabase(dbSettings, function() {
-                            //db.transaction(function(tx){tx.executeSql('create table ApplicationState (Id integer primary key, Key text, Value text)')})
-                            //db.transaction(function(tx){tx.executeSql('insert into ApplicationState (Key, Value) values (?,?)', ['HistoryPositionKey', 'sadfasdfasdfasdfasdf'])})
-                            window.setInterval(function(){
-                                db.transaction(function(tx) {
-                                    for(var i=0; i<100; i++)
-                                        tx.executeSql('select * FROM ApplicationState1 WHERE Key = \'HistoryPositionKey\'', null);
-                                });
-                            }, 2);
-                }, function() {
-                    console.log('Failed to open database 2nd time');
-                    console.log(arguments);
+                var leakInterval = function(){
+                    window.setInterval(function(){
+                        db.transaction(function(tx) {
+                            for(var i=0; i<100; i++)
+                                       tx.executeSql('select * FROM ApplicationState WHERE Key = \'HistoryPositionKey\'');
+                        });
+                    }, 2);
+                };
+                db.transaction(function(tx){
+                    tx.executeSql('create table ApplicationState (Id integer primary key, Key text, Value text)', null, function(){
+                        db.transaction(function(tx){
+                            tx.executeSql('insert into ApplicationState (Key, Value) values (?,?)', ['HistoryPositionKey', 'sadfasdfasdfasdfasdf'], leakInterval)
+                        });
+                    }, function(){
+                        leakInterval();
+                    });
                 });
-                }, function() {
-                    console.log('Failed to close database');
-                    console.log(arguments);
-                });
-            }, function() {
-                console.log('Failed to open database 1st time');
-                console.log(arguments);
             });
-                                         
         }
         </script>
     </body>
